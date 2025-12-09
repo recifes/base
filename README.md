@@ -10,8 +10,12 @@ Ele funciona como uma **CDN privada**, garantindo que alterações de estilo e c
 
 - [Introdução](#-base-hsn)
 - [Estrutura](#-estrutura-do-repositório)
+- [Versionamento](#-sistema-de-versionamento)
 - [Uso do Argon](#-uso-do-argon)
+- [Templates](#-templates-prontos)
 - [MVP Padrão](#-mvp-padrão)
+- [Scripts de Automação](#-scripts-de-automação)
+- [Utilitários](#-utilitários)
 - [Integração Zimbros](#-integração-com-zimbros)
 - [Guia de Estilo](#-guia-de-estilo)
 - [Prompt ChatGPT](#-prompt-chatgpt)
@@ -24,15 +28,66 @@ Ele funciona como uma **CDN privada**, garantindo que alterações de estilo e c
 ```
 /base.hsn.com.br
   /argon
-    /css        (estilos Argon + argon-dashboard.css)
-    /js         (bootstrap, argon, ui.js, helpers.js)
-      /core     (bootstrap, popper)
-      /plugins  (chartjs, scrollbar, notify, etc)
-    /fonts      (Nucleo Icons)
-    /img        (logos e imagens globais)
+    /versions
+      /v1.0.0   (versão específica)
+        /css
+        /js
+        /fonts
+        /img
+    VERSION     (versão atual)
+    LATEST_VERSION
+
+  /templates
+    /mvp-padrao (template completo PHP/MySQL)
+
+  /scripts
+    deploy.sh
+    version-bump.sh
+    health-check.sh
+
+  /utils
+    /php        (Auth, Response, Validator)
+    /js         (api-client, notifications, form-validator, storage)
+
   /material     (futuro: Material UI)
   /tailwind     (futuro: Tailwind Components)
 ```
+
+---
+
+## 🔖 Sistema de Versionamento
+
+O Argon Dashboard agora possui **versionamento completo**, permitindo que você:
+
+- ✅ Use versões específicas (URLs fixas que nunca mudam)
+- ✅ Use sempre a versão mais recente (URL `latest`)
+- ✅ Faça rollback facilmente em caso de problemas
+- ✅ Teste novas versões antes de atualizar produção
+
+### Usando Versão Específica
+
+```html
+<!-- Versão fixa - nunca muda -->
+<link rel="stylesheet" href="https://base.hsn.com.br/argon/versions/v1.0.0/css/argon-dashboard.min.css">
+<script src="https://base.hsn.com.br/argon/versions/v1.0.0/js/argon-dashboard.min.js"></script>
+```
+
+### Usando Última Versão
+
+```html
+<!-- Sempre usa a versão mais recente -->
+<link rel="stylesheet" href="https://base.hsn.com.br/argon/latest/css/argon-dashboard.min.css">
+<script src="https://base.hsn.com.br/argon/latest/js/argon-dashboard.min.js"></script>
+```
+
+### Incrementar Versão
+
+```bash
+cd /caminho/base-hsn
+./scripts/version-bump.sh
+```
+
+Consulte `argon/versions/v*/README.md` para changelog de cada versão.
 
 ---
 
@@ -76,6 +131,48 @@ O **Argon Dashboard** é o padrão inicial. Para incluir em qualquer projeto:
 
 ---
 
+## 📦 Templates Prontos
+
+### MVP Padrão (`templates/mvp-padrao`)
+
+Template completo e funcional para iniciar novos projetos rapidamente.
+
+**Recursos incluídos:**
+- ✅ Estrutura MVC organizada
+- ✅ Autenticação completa (local + Zimbros)
+- ✅ Sistema de sessões seguro
+- ✅ API RESTful (auth, users)
+- ✅ Dashboard funcional com Argon
+- ✅ Banco de dados estruturado
+- ✅ Activity logs
+- ✅ Validação de dados
+
+**Instalação rápida:**
+
+```bash
+# Clone o template
+cp -r templates/mvp-padrao /caminho/seu-projeto
+
+# Configure o .env
+cp .env.example .env
+nano .env
+
+# Importe o banco
+mysql -u user -p database < database/schema.sql
+mysql -u user -p database < database/seeds.sql
+
+# Acesse
+http://localhost/seu-projeto/public/
+```
+
+**Credenciais padrão:**
+- Email: `admin@hsn.com.br`
+- Senha: `123456`
+
+📖 [Documentação completa](templates/mvp-padrao/README.md)
+
+---
+
 ## 🚀 MVP Padrão
 
 O **MVP Padrão** é um esqueleto PHP/MySQL pronto para ser clonado em novos projetos. Ele contém:
@@ -96,6 +193,107 @@ O **MVP Padrão** é um esqueleto PHP/MySQL pronto para ser clonado em novos pro
 <script src="https://base.hsn.com.br/argon/js/argon-dashboard.js"></script>
 <script src="https://base.hsn.com.br/argon/js/argon-dashboard.js.map"></script>
 ```
+
+---
+
+## 🔧 Scripts de Automação
+
+Scripts bash para gerenciar o repositório de forma automatizada.
+
+### `deploy.sh` - Deploy Automático
+
+Sincroniza arquivos com servidor de produção via rsync.
+
+```bash
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+
+### `version-bump.sh` - Incrementar Versão
+
+Cria nova versão do Argon automaticamente.
+
+```bash
+./scripts/version-bump.sh
+# Escolha: patch (1.0.1), minor (1.1.0), major (2.0.0)
+```
+
+### `health-check.sh` - Verificar Integridade
+
+Valida estrutura e arquivos do repositório.
+
+```bash
+./scripts/health-check.sh
+```
+
+📖 [Documentação completa](scripts/README.md)
+
+---
+
+## 🔧 Utilitários
+
+### Utilitários PHP (`utils/php/`)
+
+Classes reutilizáveis para projetos PHP:
+
+**Auth.php** - Autenticação local e Zimbros
+```php
+$auth = new HSN\Utils\Auth($pdo);
+$user = $auth->loginLocal('user@example.com', 'senha');
+$auth->requireAuth(); // middleware
+```
+
+**Response.php** - Respostas de API padronizadas
+```php
+HSN\Utils\Response::success(['data' => $data]);
+HSN\Utils\Response::error('Mensagem', 400);
+HSN\Utils\Response::validationError($errors);
+```
+
+**Validator.php** - Validação de dados
+```php
+$errors = HSN\Utils\Validator::make($data, [
+  'email' => 'required|email',
+  'password' => 'required|min:6'
+]);
+```
+
+📖 [Documentação PHP](utils/php/README.md)
+
+### Utilitários JavaScript (`utils/js/`)
+
+Bibliotecas client-side para o ecossistema:
+
+**api-client.js** - Cliente HTTP
+```javascript
+const api = new HSNApiClient();
+await api.login('user@example.com', 'senha');
+const users = await api.get('/api/users.php');
+```
+
+**notifications.js** - Sistema de notificações
+```javascript
+notify.success('Operação realizada!');
+notify.error('Erro ao processar');
+notify.apiError(error); // formata erros de API
+```
+
+**form-validator.js** - Validação de formulários
+```javascript
+const validator = new HSNFormValidator('#formId');
+validator.required('email');
+validator.email('email');
+if (validator.validate()) { /* enviar */ }
+```
+
+**storage.js** - LocalStorage/SessionStorage
+```javascript
+storage.set('user', { name: 'João' });
+storage.setWithExpiry('token', 'abc', 300); // 5min
+const user = storage.get('user');
+```
+
+📖 [Documentação JavaScript](utils/js/README.md)
 
 ---
 
